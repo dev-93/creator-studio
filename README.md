@@ -1,8 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# youtube-pipeline
 
-## Getting Started
+이 프로젝트는 YouTube 관련 데이터를 처리하고, Gemini AI를 활용하여 콘텐츠를 생성하며, Notion과 연동하는 파이프라인 애플리케이션입니다. Next.js를 기반으로 구축되었으며, 사용자 친화적인 인터페이스와 강력한 백엔드 기능을 제공합니다.
 
-First, run the development server:
+## 주요 기능
+
+*   **YouTube 데이터 처리**: YouTube 관련 데이터를 효율적으로 수집하고 처리합니다.
+*   **Gemini AI 기반 콘텐츠 생성**: Google Gemini AI를 활용하여 다양한 콘텐츠를 생성합니다. (예: 영상 요약, 스크립트 작성 등)
+*   **Notion 통합**: 생성된 콘텐츠를 Notion 데이터베이스에 저장하거나 관리할 수 있도록 연동합니다.
+*   **반응형 UI**: Next.js와 Tailwind CSS를 사용하여 모든 기기에서 최적화된 사용자 경험을 제공합니다.
+
+## 기술 스택
+
+*   **프레임워크**: Next.js (App Router)
+*   **언어**: TypeScript
+*   **스타일링**: Tailwind CSS
+*   **AI**: Google Gemini API
+*   **데이터베이스/CMS**: Notion API
+*   **UI/UX**: React, Framer Motion (애니메이션)
+
+## 시작하기
+
+이 프로젝트를 로컬 환경에서 실행하려면 다음 단계를 따르세요.
+
+### 1. 환경 변수 설정
+
+프로젝트 루트 디렉토리에 `.env.local` 파일을 생성하고 다음 환경 변수를 추가합니다.
+
+```
+GOOGLE_GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+NOTION_TOKEN=YOUR_NOTION_INTEGRATION_TOKEN
+NOTION_DATABASE_ID=YOUR_NOTION_DATABASE_ID
+```
+
+*   `GOOGLE_GEMINI_API_KEY`: Google Cloud Console에서 발급받은 Gemini API 키.
+*   `NOTION_TOKEN`: Notion 통합(Integration) 토큰.
+*   `NOTION_DATABASE_ID`: 연동할 Notion 데이터베이스의 ID.
+
+### 2. 의존성 설치
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
+
+### 3. 개발 서버 실행
 
 ```bash
 npm run dev
@@ -14,23 +60,21 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[http://localhost:4500](http://localhost:4500) (기본 포트가 3000에서 4500으로 변경되었습니다.) 에서 애플리케이션을 열어볼 수 있습니다. 페이지를 편집하려면 `app/page.tsx` 파일을 수정하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+이 프로젝트는 [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)를 사용하여 Vercel의 새로운 폰트인 [Geist](https://vercel.com/font)를 자동으로 최적화하고 로드합니다.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 더 알아보기
 
-## Learn More
+Next.js에 대해 더 자세히 알아보려면 다음 자료들을 참고하세요:
 
-To learn more about Next.js, take a look at the following resources:
+*   [Next.js Documentation](https://nextjs.org/docs) - Next.js의 기능 및 API에 대해 알아봅니다.
+*   [Learn Next.js](https://nextjs.org/learn) - 인터랙티브 Next.js 튜토리얼.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[Next.js GitHub repository](https://github.com/vercel/next.js)도 확인해보세요 - 여러분의 피드백과 기여를 환영합니다!
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Vercel에 배포하기
 
-## Deploy on Vercel
+Next.js 앱을 배포하는 가장 쉬운 방법은 Next.js 개발자들이 만든 [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)을 사용하는 것입니다.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+더 자세한 내용은 [Next.js 배포 문서](https://nextjs.org/docs/app/building-your-application/deploying)를 참조하세요.
