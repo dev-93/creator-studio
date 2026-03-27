@@ -202,7 +202,14 @@ export default function Page() {
       const res = await fetch('/api/notion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ themes }),
+        body: JSON.stringify({
+          type: 'shorts',
+          theme: selectedTheme,
+          scenario,
+          klingPrompts,
+          marketing,
+          status: '생성 완료'
+        }),
       });
       const data = await res.json();
       if (data.success) {

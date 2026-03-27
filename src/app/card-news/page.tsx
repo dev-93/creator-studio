@@ -11,7 +11,8 @@ import {
   RotateCcw,
   TrendingUp,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  CloudUpload
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,6 +72,9 @@ export default function CardNewsPage() {
   const [history, setHistory] = useState<CardHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
   const fetchAgent = async (step: CardNewsStep, body: Record<string, unknown>) => {
     setLoadingStep(step);
     try {
@@ -108,7 +112,37 @@ export default function CardNewsPage() {
     localStorage.setItem('card_news_history', JSON.stringify(updated));
   };
 
+  const saveToNotion = async () => {
+    if (!selectedTopic || cards.length === 0) return;
+    setSaveLoading(true);
+    try {
+      const res = await fetch('/api/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'card',
+          theme: selectedTopic,
+          scenario: cards,
+          klingPrompts: imagePrompts,
+          marketing: marketing,
+          status: '생성 완료'
+        }),
+      });
+      if (res.ok) {
+        alert('노션에 성공적으로 저장되었습니다!');
+      } else {
+        throw new Error('노션 저장 실패');
+      }
+    } catch (error) {
+      console.error('Notion Error:', error);
+      alert('노션 저장 중 오류가 발생했습니다.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('card_news_history');
       if (saved) {
@@ -116,6 +150,8 @@ export default function CardNewsPage() {
       }
     }
   }, []);
+
+  if (!mounted) return null;
 
   const startPipeline = async (topic: string) => {
     setSelectedTopic(topic);
@@ -177,7 +213,7 @@ export default function CardNewsPage() {
   };
 
   return (
-    <div className="main-container" suppressHydrationWarning>
+    <div className="main-container">
       <header className="header">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -299,6 +335,7 @@ export default function CardNewsPage() {
       <AnimatePresence>
         {showHistory && (
           <motion.section 
+            key="history-panel"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -355,6 +392,7 @@ export default function CardNewsPage() {
         <AnimatePresence>
           {selectedTopic && cards.length > 0 && (
             <motion.div
+              key="selected-topic-header"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               style={{ marginBottom: '1.5rem', textAlign: 'center' }}
@@ -367,6 +405,7 @@ export default function CardNewsPage() {
 
           {cards.length > 0 && (
             <motion.section 
+              key="cards-result-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="glass-panel result-section"
@@ -394,6 +433,7 @@ export default function CardNewsPage() {
 
           {imagePrompts.length > 0 && (
             <motion.section 
+              key="image-prompts-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="glass-panel result-section"
@@ -417,15 +457,27 @@ export default function CardNewsPage() {
 
           {marketing && (
             <motion.section 
+              key="marketing-result-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="glass-panel result-section"
             >
               <div className="result-header">
                 <h2 className="result-title">📱 인스타그램 게시물 구성</h2>
-                <button className="copy-btn btn-secondary" onClick={() => copyToClipboard(`${marketing.caption}\n\n${marketing.hashtags}`)}>
-                  <Copy size={14} style={{ marginRight: '5px', display: 'inline' }} /> 전체 복사
-                </button>
+                <div>
+                  <button 
+                    className="btn-primary" 
+                    onClick={saveToNotion} 
+                    disabled={saveLoading}
+                    style={{ marginRight: '10px', background: '#000', color: '#fff', border: '1px solid #333' }}
+                  >
+                    <CloudUpload size={14} style={{ marginRight: '5px', display: 'inline' }} /> 
+                    {saveLoading ? '저장 중...' : '노션에 저장'}
+                  </button>
+                  <button className="copy-btn btn-secondary" onClick={() => copyToClipboard(`${marketing.caption}\n\n${marketing.hashtags}`)}>
+                    <Copy size={14} style={{ marginRight: '5px', display: 'inline' }} /> 전체 복사
+                  </button>
+                </div>
               </div>
               <div className="content-box">
                 <div style={{ marginBottom: '1.5rem' }}>

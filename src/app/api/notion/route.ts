@@ -29,7 +29,7 @@ export const GET = async () => {
 
 export const POST = async (request: Request) => {
   try {
-    const { theme, scenario, klingPrompts, marketing, status } = await request.json();
+    const { type, theme, scenario, klingPrompts, marketing, status } = await request.json();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const properties: any = {
@@ -52,7 +52,36 @@ export const POST = async (request: Request) => {
           start: new Date().toISOString(),
         },
       },
+      'channel': {
+        select: {
+          name: type === 'card' ? 'insta' : 'youtube',
+        },
+      },
     };
+
+    // 테이블 컬럼(속성) 채우기 (스크린샷에 있는 컬럼명 기준)
+    if (scenario) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const text = Array.isArray(scenario) 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? scenario.map((s: any) => s.description || s.body || s.title || '').join(' ')
+        : scenario;
+      properties['시나리오'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
+    }
+
+    if (klingPrompts) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const text = Array.isArray(klingPrompts)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? klingPrompts.map((p: any) => p.englishPrompt || p.prompt || '').join(' ')
+        : klingPrompts;
+      properties['프롬프트'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
+    }
+
+    if (marketing) {
+      const text = `${marketing.caption || ''} ${marketing.hashtags || ''}`;
+      properties['마케팅 데이터'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const children: any[] = [];
@@ -63,14 +92,18 @@ export const POST = async (request: Request) => {
         object: 'block',
         type: 'heading_2',
         heading_2: {
-          rich_text: [{ type: 'text', text: { content: '🎬 시나리오' } }],
+          rich_text: [{ type: 'text', text: { content: type === 'card' ? '✍️ 카드뉴스 본문' : '🎬 시나리오' } }],
         },
       });
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scenarioText = Array.isArray(scenario) 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? scenario.map((s: any) => `${s.sceneNumber}. ${s.description}`).join('\n\n')
+        ? scenario.map((s: any) => {
+            if (s.sceneNumber) return `${s.sceneNumber}. ${s.description}`;
+            if (s.card) return `[Card ${s.card}]\n${s.title || s.question ||' '}\n${s.subtitle || s.body || s.preview || ' '}`;
+            return JSON.stringify(s);
+          }).join('\n\n')
         : scenario;
 
       children.push({
@@ -98,14 +131,18 @@ export const POST = async (request: Request) => {
         object: 'block',
         type: 'heading_2',
         heading_2: {
-          rich_text: [{ type: 'text', text: { content: '🤖 Kling 영상 생성 프롬프트' } }],
+          rich_text: [{ type: 'text', text: { content: '🖼️ 생성 프롬프트' } }],
         },
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const promptText = Array.isArray(klingPrompts)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? klingPrompts.map((p: any) => `[Scene ${p.sceneNumber}]\n${p.englishPrompt}`).join('\n\n')
+        ? klingPrompts.map((p: any) => {
+            if (p.sceneNumber) return `[Scene ${p.sceneNumber}]\n${p.englishPrompt}`;
+            if (p.card) return `[Card ${p.card} - ${p.style}]\n${p.prompt}`;
+            return JSON.stringify(p);
+          }).join('\n\n')
         : klingPrompts;
 
       children.push({
