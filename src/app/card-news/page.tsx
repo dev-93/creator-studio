@@ -12,7 +12,9 @@ import {
   TrendingUp,
   Sparkles,
   ChevronRight,
-  CloudUpload
+  CloudUpload,
+  Globe,
+  Database
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,9 +73,47 @@ export default function CardNewsPage() {
   const [completedSteps, setCompletedSteps] = useState<CardNewsStep[]>([]);
   const [history, setHistory] = useState<CardHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'local' | 'notion'>('local');
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [notionHistory, setNotionHistory] = useState<{
+    id: string;
+    topic: string;
+    status: string;
+    date: string;
+    url: string;
+  }[]>([]);
 
   const [mounted, setMounted] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+
+  const fetchNotionHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch('/api/notion');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const formattedData = data.map((page: { id: string; properties: Record<string, { select?: { name: string }, title?: { plain_text: string }[], status?: { name: string }, date?: { start: string } }>; url: string; created_time: string }) => {
+          const channel = page.properties['channel']?.select?.name;
+          return {
+            id: page.id,
+            topic: page.properties.Name?.title?.[0]?.plain_text || 'Untitled',
+            status: page.properties['상태']?.status?.name || 'Idea',
+            date: page.properties['생성일']?.date?.start || page.created_time,
+            url: page.url,
+            channel: channel
+          };
+        });
+        
+        // channel이 명시적으로 'insta'인 데이터만 표시
+        const instaOnly = formattedData.filter((item: { channel?: string }) => item.channel === 'insta');
+        setNotionHistory(instaOnly);
+      }
+    } catch (err) {
+      console.error('Notion history fetch error:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const fetchAgent = async (step: CardNewsStep, body: Record<string, unknown>) => {
     setLoadingStep(step);
@@ -149,6 +189,7 @@ export default function CardNewsPage() {
         setHistory(JSON.parse(saved));
       }
     }
+    fetchNotionHistory();
   }, []);
 
   if (!mounted) return null;
@@ -346,24 +387,78 @@ export default function CardNewsPage() {
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                 <RotateCcw size={18} /> 최근 생성 기록
               </h3>
+              <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '10px' }}>
+                <button 
+                  onClick={() => setHistoryTab('local')}
+                  style={{ 
+                    padding: '0.4rem 1rem', 
+                    fontSize: '0.8rem', 
+                    borderRadius: '8px',
+                    background: historyTab === 'local' ? 'var(--accent-color)' : 'transparent',
+                    color: 'white'
+                  }}
+                >
+                  <Globe size={14} style={{ marginRight: '4px', display: 'inline' }} /> 브라우저
+                </button>
+                <button 
+                  onClick={() => { setHistoryTab('notion'); fetchNotionHistory(); }}
+                  style={{ 
+                    padding: '0.4rem 1rem', 
+                    fontSize: '0.8rem', 
+                    borderRadius: '8px',
+                    background: historyTab === 'notion' ? 'var(--accent-color)' : 'transparent',
+                    color: 'white'
+                  }}
+                >
+                  <Database size={14} style={{ marginRight: '4px', display: 'inline' }} /> 노션 (Archive)
+                </button>
+              </div>
             </div>
             
-            {history.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>아직 저장된 기록이 없습니다.</p>
+            {historyTab === 'local' ? (
+              history.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>아직 브라우저에 저장된 기록이 없습니다.</p>
+              ) : (
+                <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                  {history.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="list-item" 
+                      onClick={() => loadFromHistory(item)}
+                      style={{ padding: '0.8rem', fontSize: '0.9rem' }}
+                    >
+                      <div style={{ fontWeight: 600, color: 'var(--accent-color)', marginBottom: '4px' }}>{item.topic}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{item.timestamp}</div>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                {history.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="list-item" 
-                    onClick={() => loadFromHistory(item)}
-                    style={{ padding: '0.8rem', fontSize: '0.9rem' }}
-                  >
-                    <div style={{ fontWeight: 600, color: 'var(--accent-color)', marginBottom: '4px' }}>{item.topic}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{item.timestamp}</div>
-                  </div>
-                ))}
-              </div>
+              loadingHistory ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loader" style={{ margin: '0 auto' }} /></div>
+              ) : notionHistory.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>노션에 저장된 기록이 없습니다.</p>
+              ) : (
+                <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                  {notionHistory.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="list-item" 
+                      onClick={() => window.open(item.url, '_blank')}
+                      style={{ padding: '0.8rem', fontSize: '0.9rem', position: 'relative' }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}>
+                          {item.status}
+                        </span>
+                        <Database size={12} color="var(--accent-color)" />
+                      </div>
+                      <div style={{ fontWeight: 600, color: 'white', marginBottom: '4px' }}>{item.topic}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{new Date(item.date).toLocaleDateString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </motion.section>
         )}

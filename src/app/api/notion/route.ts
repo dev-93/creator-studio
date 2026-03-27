@@ -75,7 +75,6 @@ export const POST = async (request: Request) => {
         },
       });
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scenarioText = Array.isArray(scenario) 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? scenario.map((s: any) => {
@@ -114,7 +113,6 @@ export const POST = async (request: Request) => {
         },
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const promptText = Array.isArray(klingPrompts)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? klingPrompts.map((p: any) => {

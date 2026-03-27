@@ -82,13 +82,21 @@ export default function Page() {
       const res = await fetch('/api/notion');
       const data = await res.json();
       if (Array.isArray(data)) {
-        setNotionHistory(data.map((page: { id: string; properties: any; url: string; created_time: string }) => ({
-          id: page.id,
-          theme: page.properties.Name.title[0]?.plain_text || 'Untitled',
-          status: page.properties['상태']?.status?.name || 'Idea',
-          date: page.properties['생성일']?.date?.start || page.created_time,
-          url: page.url,
-        })));
+        const formattedData = data.map((page: { id: string; properties: Record<string, { select?: { name: string }, title?: { plain_text: string }[], status?: { name: string }, date?: { start: string } }>; url: string; created_time: string }) => {
+          const channel = page.properties['channel']?.select?.name;
+          return {
+            id: page.id,
+            theme: page.properties.Name?.title?.[0]?.plain_text || 'Untitled',
+            status: page.properties['상태']?.status?.name || 'Idea',
+            date: page.properties['생성일']?.date?.start || page.created_time,
+            url: page.url,
+            channel: channel
+          };
+        });
+        
+        // channel이 명시적으로 'youtube'이거나 기존에 channel 필드가 없던 옛날 데이터만 표시
+        const youtubeOnly = formattedData.filter((item: { channel?: string }) => !item.channel || item.channel === 'youtube');
+        setNotionHistory(youtubeOnly);
       }
     } catch (err) {
       console.error('Notion history fetch error:', err);
@@ -124,7 +132,7 @@ export default function Page() {
     localStorage.setItem('youtube_pipeline_history', JSON.stringify(updated));
   };
 
-  const fetchAgent = async (step: Step, body: any) => {
+  const fetchAgent = async (step: Step, body: Record<string, unknown>) => {
     setLoadingStep(step);
     try {
       const res = await fetch('/api/generate', {

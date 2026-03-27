@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config({ path: '.env.local' });
 
