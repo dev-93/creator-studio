@@ -9,7 +9,6 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
 
 export const GET = async () => {
   try {
-    // @ts-expect-error - Notion SDK 5.14.0 has missing type for databases.query
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       sorts: [
@@ -19,6 +18,7 @@ export const GET = async () => {
         },
       ],
     });
+        
     return NextResponse.json(response.results);
   } catch (error) {
     console.error('Notion API Error:', error);
@@ -31,6 +31,7 @@ export const POST = async (request: Request) => {
   try {
     const { theme, scenario, klingPrompts, marketing, status } = await request.json();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const properties: any = {
       'Name': {
         title: [
@@ -53,6 +54,7 @@ export const POST = async (request: Request) => {
       },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const children: any[] = [];
 
     // 시나리오 본문에 추가
@@ -65,7 +67,9 @@ export const POST = async (request: Request) => {
         },
       });
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scenarioText = Array.isArray(scenario) 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? scenario.map((s: any) => `${s.sceneNumber}. ${s.description}`).join('\n\n')
         : scenario;
 
@@ -98,7 +102,9 @@ export const POST = async (request: Request) => {
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const promptText = Array.isArray(klingPrompts)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? klingPrompts.map((p: any) => `[Scene ${p.sceneNumber}]\n${p.englishPrompt}`).join('\n\n')
         : klingPrompts;
 

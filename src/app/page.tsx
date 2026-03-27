@@ -14,6 +14,8 @@ import {
   Calendar,
   ChevronRight,
   HelpCircle,
+  Database,
+  Globe,
 } from 'lucide-react';
 
 type Step = 'theme' | 'scenario' | 'kling' | 'marketing';
@@ -61,9 +63,39 @@ export default function Page() {
   const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [weeklyTrends, setWeeklyTrends] = useState<any[]>([]);
+  const [historyTab, setHistoryTab] = useState<'local' | 'notion'>('local');
+  const [notionHistory, setNotionHistory] = useState<{
+    id: string;
+    theme: string;
+    status: string;
+    date: string;
+    url: string;
+  }[]>([]);
+  const [weeklyTrends, setWeeklyTrends] = useState<Record<string, string>[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [showKeywordInfo, setShowKeywordInfo] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const fetchNotionHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch('/api/notion');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setNotionHistory(data.map((page: { id: string; properties: any; url: string; created_time: string }) => ({
+          id: page.id,
+          theme: page.properties.Name.title[0]?.plain_text || 'Untitled',
+          status: page.properties['상태']?.status?.name || 'Idea',
+          date: page.properties['생성일']?.date?.start || page.created_time,
+          url: page.url,
+        })));
+      }
+    } catch (err) {
+      console.error('Notion history fetch error:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
     // Load trends
@@ -81,6 +113,9 @@ export default function Page() {
         setHistory(JSON.parse(saved));
       }
     }
+
+    // Initial fetch of notion history
+    fetchNotionHistory();
   }, []);
 
   const saveToHistory = (item: HistoryItem) => {
@@ -255,9 +290,9 @@ export default function Page() {
               <p style={{ fontWeight: 700, marginBottom: '0.6rem', color: 'var(--accent-color)' }}>💡 키워드 선정 기준</p>
               <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px', listStyleType: 'disc' }}>
                 <li><strong>대상:</strong> 3-7세 어린이 및 그 부모님</li>
-                <li><strong>컨셉:</strong> "왜 안돼?" (호기심과 안전 교육의 결합)</li>
+                <li><strong>컨셉:</strong> &quot;왜 안돼?&quot; (호기심과 안전 교육의 결합)</li>
                 <li><strong>기준:</strong> 시각적 대비가 뚜렷한 안전 수칙, 의외의 과학 상식, 대자연의 신비</li>
-                <li><strong>출처:</strong> Google Gemini AI ('왜 안돼?' 안전/교육 테마 기반 자동 분석)</li>
+                <li><strong>출처:</strong> Google Gemini AI (&apos;왜 안돼?&apos; 안전/교육 테마 기반 자동 분석)</li>
               </ul>
             </motion.div>
           )}
@@ -362,14 +397,43 @@ export default function Page() {
             className="glass-panel"
             style={{ marginBottom: '2rem', padding: '1.5rem', overflow: 'hidden' }}
           >
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <RotateCcw size={18} /> 최근 생성 기록
-            </h3>
-            {history.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>아직 저장된 기록이 없습니다.</p>
-            ) : (
-              <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <RotateCcw size={18} /> 최근 생성 기록
+              </h3>
+              <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '10px' }}>
+                <button 
+                  onClick={() => setHistoryTab('local')}
+                  style={{ 
+                    padding: '0.4rem 1rem', 
+                    fontSize: '0.8rem', 
+                    borderRadius: '8px',
+                    background: historyTab === 'local' ? 'var(--accent-color)' : 'transparent',
+                    color: 'white'
+                  }}
+                >
+                  <Globe size={14} style={{ marginRight: '4px', display: 'inline' }} /> 브라우저
+                </button>
+                <button 
+                  onClick={() => { setHistoryTab('notion'); fetchNotionHistory(); }}
+                  style={{ 
+                    padding: '0.4rem 1rem', 
+                    fontSize: '0.8rem', 
+                    borderRadius: '8px',
+                    background: historyTab === 'notion' ? 'var(--accent-color)' : 'transparent',
+                    color: 'white'
+                  }}
+                >
+                  <Database size={14} style={{ marginRight: '4px', display: 'inline' }} /> 노션 (Archive)
+                </button>
+              </div>
+            </div>
+
+            {historyTab === 'local' ? (
+              history.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>아직 브라우저에 저장된 기록이 없습니다.</p>
+              ) : (
+                <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                   {history.map((item) => (
                     <div 
                       key={item.id} 
@@ -382,7 +446,33 @@ export default function Page() {
                     </div>
                   ))}
                 </div>
-              </div>
+              )
+            ) : (
+              loadingHistory ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loader" style={{ margin: '0 auto' }} /></div>
+              ) : notionHistory.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>노션에 저장된 기록이 없습니다.</p>
+              ) : (
+                <div className="history-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                  {notionHistory.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="list-item" 
+                      onClick={() => window.open(item.url, '_blank')}
+                      style={{ padding: '0.8rem', fontSize: '0.9rem', position: 'relative' }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}>
+                          {item.status}
+                        </span>
+                        <Database size={12} color="var(--accent-color)" />
+                      </div>
+                      <div style={{ fontWeight: 600, color: 'white', marginBottom: '4px' }}>{item.theme}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{new Date(item.date).toLocaleDateString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </motion.section>
         )}
