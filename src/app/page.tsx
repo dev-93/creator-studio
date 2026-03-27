@@ -532,7 +532,7 @@ export default function Page() {
 
         {/* Results Section */}
         <AnimatePresence>
-          {scenario.length > 0 && (
+          {scenario && scenario.length > 0 && (
             <motion.section 
               key="scenario-section"
               initial={{ opacity: 0, x: -20 }}
@@ -555,7 +555,7 @@ export default function Page() {
             </motion.section>
           )}
 
-          {klingPrompts.length > 0 && (
+          {klingPrompts && klingPrompts.length > 0 && (
             <motion.section 
               key="kling-section"
               initial={{ opacity: 0, x: 0 }}
