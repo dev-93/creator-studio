@@ -59,29 +59,8 @@ export const POST = async (request: Request) => {
       },
     };
 
-    // 테이블 컬럼(속성) 채우기 (스크린샷에 있는 컬럼명 기준)
-    if (scenario) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const text = Array.isArray(scenario) 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? scenario.map((s: any) => s.description || s.body || s.title || '').join(' ')
-        : scenario;
-      properties['시나리오'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
-    }
-
-    if (klingPrompts) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const text = Array.isArray(klingPrompts)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? klingPrompts.map((p: any) => p.englishPrompt || p.prompt || '').join(' ')
-        : klingPrompts;
-      properties['프롬프트'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
-    }
-
-    if (marketing) {
-      const text = `${marketing.caption || ''} ${marketing.hashtags || ''}`;
-      properties['마케팅 데이터'] = { rich_text: [{ text: { content: text.substring(0, 2000) } }] };
-    }
+    // 테이블 속성(컬럼)에 직접 넣는 부분은 에러(property that does not exist)를
+    // 방지하기 위해 제거하고, 모든 내용은 이전처럼 페이지 본문(children)에만 깔끔하게 넣습니다.
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const children: any[] = [];
