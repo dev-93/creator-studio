@@ -243,5 +243,15 @@ button {
 .keyword-tag:hover {
   background: var(--accent-color);
   color: white;
-  transform: translateY(-2px);
+}
+
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.topic-grid-empty {
+  display: block;
+  text-align: center;
 }

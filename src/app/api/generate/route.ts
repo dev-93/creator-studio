@@ -66,12 +66,60 @@ ${trends}
 3. 참여 유도 설명: 시청자와의 소통을 유도하고 구독을 제안하는 구조화된 설명글.
 
 결과는 반드시 JSON 형식으로 반환하세요.
-형식: { "title": "제목", "hashtags": "해시태그1 #해시태그2 ...", "description": "구조화된 설명" }`
+형식: { "title": "제목", "hashtags": "해시태그1 #해시태그2 ...", "description": "구조화된 설명" }`,
+
+  card_trends: () => `너는 인스타그램 카드뉴스 트렌드 전문가야.
+요즘 사람들이 관심 갖는 AI, 테크, 글로벌 이슈 중에서 
+인스타그램 카드뉴스로 만들면 저장율이 높을 주제 3개를 추천해줘.
+각 주제는 제목(30자 이내), 한줄설명(50자 이내), 카테고리(AI/테크/이슈 중 하나)로 구성.
+반드시 JSON 배열로만 응답. 다른 텍스트 없이.
+형식: [{"title":"...","description":"...","category":"..."}]`,
+
+  card_writer: (topic: string) => `너는 인스타그램 카드뉴스 전문 작가야.
+주어진 주제 "${topic}"으로 카드뉴스 5장 텍스트를 작성해줘.
+카드 구성:
+- 1장: 후킹 제목 (30자 이내) + 부제목 (40자 이내)
+- 2장: 핵심 데이터나 사실 1개 + 설명 2줄
+- 3장: 핵심 인사이트 1개 + 설명 2줄
+- 4장: 실제 사례나 현실 상황 + 설명 2줄
+- 5장: 독자 댓글 유도 질문 + 다음편 예고 한줄
+톤: 친근하고 쉽게, 20-30대가 읽기 편한 문체.
+반드시 JSON으로만 응답. 다른 텍스트 없이.
+형식: 
+[
+  {"card":1,"title":"...","subtitle":"..."},
+  {"card":2,"title":"...","body":"..."},
+  {"card":3,"title":"...","body":"..."},
+  {"card":4,"title":"...","body":"..."},
+  {"card":5,"question":"...","preview":"..."}
+]`,
+
+  card_image: (cards: Array<Record<string, unknown>>) => `너는 인스타그램 카드뉴스 이미지 디렉터야.
+카드뉴스 5장 내용 ${JSON.stringify(cards)}을 보고 각 카드에 어울리는 이미지 프롬프트를 영어로 작성해줘.
+ImageFX 또는 Midjourney에서 바로 사용 가능한 프롬프트.
+저작권 문제 없는 스톡 이미지 스타일.
+각 프롬프트 2줄 이내.
+반드시 JSON으로만 응답. 다른 텍스트 없이.
+형식:
+[
+  {"card":1,"prompt":"...","style":"photo"},
+  {"card":2,"prompt":"...","style":"illustration"},
+  {"card":3,"prompt":"...","style":"photo"},
+  {"card":4,"prompt":"...","style":"illustration"},
+  {"card":5,"prompt":"...","style":"photo"}
+]`,
+
+  card_marketer: (topic: string, cards: Array<Record<string, unknown>>) => `너는 인스타그램 마케터야.
+주제 "${topic}"과 카드뉴스 내용 ${JSON.stringify(cards)}을 보고 게시물 캡션과 해시태그를 작성해줘.
+캡션: 첫 줄 후킹 문장 + 3-4줄 핵심 요약 + 마지막 질문.
+해시태그: 15개 이내, 한국어+영어 혼합, 이모지 자연스럽게 포함.
+반드시 JSON으로만 응답. 다른 텍스트 없이.
+형식: {"caption":"...","hashtags":"#... #..."}`
 };
 
 export const POST = async (request: Request) => {
   try {
-    const { step, theme, scenes } = await request.json();
+    const { step, theme, scenes, topic, cards } = await request.json();
 
     let prompt = '';
     switch (step) {
@@ -82,7 +130,7 @@ export const POST = async (request: Request) => {
           if (fs.existsSync(trendsPath)) {
             const rawTrends = fs.readFileSync(trendsPath, 'utf8');
             const trendsArr = JSON.parse(rawTrends);
-            trendsContent = trendsArr.map((t: any) => `- ${t.keyword}: ${t.description}`).join('\n');
+            trendsContent = trendsArr.map((t: { keyword: string; description: string }) => `- ${t.keyword}: ${t.description}`).join('\n');
           }
         } catch (e) {
           console.error("Failed to read trends file", e);
@@ -97,6 +145,18 @@ export const POST = async (request: Request) => {
         break;
       case 'marketing':
         prompt = AGENT_PROMPTS.marketing(theme);
+        break;
+      case 'card_trends':
+        prompt = AGENT_PROMPTS.card_trends();
+        break;
+      case 'card_writer':
+        prompt = AGENT_PROMPTS.card_writer(topic);
+        break;
+      case 'card_image':
+        prompt = AGENT_PROMPTS.card_image(cards);
+        break;
+      case 'card_marketer':
+        prompt = AGENT_PROMPTS.card_marketer(topic, cards);
         break;
       default:
         return NextResponse.json({ error: 'Invalid step' }, { status: 400 });

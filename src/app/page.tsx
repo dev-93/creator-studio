@@ -254,6 +254,19 @@ export default function Page() {
           AI Shorts Agent
         </motion.h1>
         <p className="subtitle">AI 유튜브 쇼츠 자동화 파이프라인</p>
+        
+        <nav style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <button className="keyword-tag selected-item" style={{ padding: '0.4rem 1.2rem', cursor: 'default' }}>
+            AI Shorts
+          </button>
+          <button 
+            className="keyword-tag" 
+            style={{ padding: '0.4rem 1.2rem' }}
+            onClick={() => window.location.href = '/card-news'}
+          >
+            카드뉴스 만들기
+          </button>
+        </nav>
       </header>
 
       {/* Integrated Trends & Keywords Section */}
