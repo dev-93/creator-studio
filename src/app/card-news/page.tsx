@@ -14,9 +14,11 @@ import {
   ChevronRight,
   CloudUpload,
   Globe,
-  Database
+  Database,
+  Layout
 } from 'lucide-react';
 import Link from 'next/link';
+import CardPreview from './components/CardPreview';
 
 type CardNewsStep = 'card_trends' | 'card_writer' | 'card_image' | 'card_marketer';
 
@@ -29,10 +31,13 @@ interface CardContent {
   preview?: string;
 }
 
-interface ImagePrompt {
+interface CardDesign {
   card: number;
-  prompt: string;
-  style_identity: string;
+  themeName: string;
+  gradientFrom: string;
+  gradientTo: string;
+  glowColor: string;
+  accentColor: string;
 }
 
 interface CardMarketing {
@@ -50,7 +55,7 @@ interface CardHistoryItem {
   id: string;
   topic: string;
   cards: CardContent[];
-  imagePrompts: ImagePrompt[];
+  cardDesigns: CardDesign[];
   marketing: CardMarketing | null;
   timestamp: string;
 }
@@ -58,7 +63,7 @@ interface CardHistoryItem {
 const CARD_AGENTS = [
   { id: 'card_trends', name: '트렌드 수집가', icon: TrendingUp, loadingText: '트렌드 수집가가 주제를 분석하고 있어요...' },
   { id: 'card_writer', name: '카드 작가', icon: PenTool, loadingText: '카드 작가가 콘텐츠를 작성하고 있어요...' },
-  { id: 'card_image', name: '이미지 디렉터', icon: ImageIcon, loadingText: '이미지 디렉터가 비주얼을 구성하고 있어요...' },
+  { id: 'card_image', name: '디자인 디렉터', icon: Layout, loadingText: '디렉터가 UI/UX 레이아웃을 구성하고 있어요...' },
   { id: 'card_marketer', name: '마케터', icon: Share2, loadingText: '마케터가 캡션을 작성하고 있어요...' },
 ];
 
@@ -67,7 +72,7 @@ export default function CardNewsPage() {
   const [recommendedTopics, setRecommendedTopics] = useState<CardTopic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [cards, setCards] = useState<CardContent[]>([]);
-  const [imagePrompts, setImagePrompts] = useState<ImagePrompt[]>([]);
+  const [cardDesigns, setCardDesigns] = useState<CardDesign[]>([]);
   const [marketing, setMarketing] = useState<CardMarketing | null>(null);
   const [loadingStep, setLoadingStep] = useState<CardNewsStep | null>(null);
   const [completedSteps, setCompletedSteps] = useState<CardNewsStep[]>([]);
@@ -163,7 +168,7 @@ export default function CardNewsPage() {
           type: 'card',
           theme: selectedTopic,
           scenario: cards,
-          klingPrompts: imagePrompts,
+          klingPrompts: cardDesigns,
           marketing: marketing,
           status: '생성 완료'
         }),
@@ -197,7 +202,7 @@ export default function CardNewsPage() {
   const startPipeline = async (topic: string) => {
     setSelectedTopic(topic);
     setCards([]);
-    setImagePrompts([]);
+    setCardDesigns([]);
     setMarketing(null);
     setCompletedSteps(['card_trends']);
 
@@ -207,10 +212,10 @@ export default function CardNewsPage() {
     setCards(cardsResult);
     setCompletedSteps(['card_trends', 'card_writer']);
 
-    const imageData = await fetchAgent('card_image', { cards: cardsResult });
-    if (!imageData) return;
-    const imageResult = Array.isArray(imageData) ? imageData : imageData.prompts;
-    setImagePrompts(imageResult);
+    const designData = await fetchAgent('card_image', { cards: cardsResult });
+    if (!designData) return;
+    const designResult = Array.isArray(designData) ? designData : designData.designs || designData;
+    setCardDesigns(designResult);
     setCompletedSteps(['card_trends', 'card_writer', 'card_image']);
 
     const marketingData = await fetchAgent('card_marketer', { topic, cards: cardsResult });
@@ -222,7 +227,7 @@ export default function CardNewsPage() {
       id: Date.now().toString(),
       topic,
       cards: cardsResult,
-      imagePrompts: imageResult,
+      cardDesigns: designResult,
       marketing: marketingData,
       timestamp: new Date().toLocaleString(),
     };
@@ -232,7 +237,7 @@ export default function CardNewsPage() {
   const loadFromHistory = (item: CardHistoryItem) => {
     setSelectedTopic(item.topic);
     setCards(item.cards);
-    setImagePrompts(item.imagePrompts);
+    setCardDesigns(item.cardDesigns || []);
     setMarketing(item.marketing);
     setCompletedSteps(['card_trends', 'card_writer', 'card_image', 'card_marketer']);
     setShowHistory(false);
@@ -248,7 +253,7 @@ export default function CardNewsPage() {
     setRecommendedTopics([]);
     setSelectedTopic(null);
     setCards([]);
-    setImagePrompts([]);
+    setCardDesigns([]);
     setMarketing(null);
     setCompletedSteps([]);
   };
@@ -511,39 +516,21 @@ export default function CardNewsPage() {
                   <Copy size={14} style={{ marginRight: '5px', display: 'inline' }} /> 전체 복사
                 </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 {cards.map((card) => (
-                  <div key={card.card} className="content-box" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <p style={{ color: 'var(--accent-color)', fontWeight: 700, marginBottom: '0.5rem' }}>Card {card.card}</p>
-                    {card.title && <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{card.title}</p>}
-                    {card.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{card.subtitle}</p>}
-                    {card.body && <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{card.body}</p>}
-                    {card.question && <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--accent-color)' }}>Q: {card.question}</p>}
-                    {card.preview && <p style={{ fontSize: '0.9rem', fontStyle: 'italic', marginTop: '0.5rem' }}>Next: {card.preview}</p>}
-                  </div>
-                ))}
-              </div>
-            </motion.section>
-          )}
-
-          {imagePrompts.length > 0 && (
-            <motion.section 
-              key="image-prompts-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-panel result-section"
-            >
-              <div className="result-header">
-                <h2 className="result-title">🖼️ 이미지 생성 프롬프트</h2>
-                <button className="copy-btn btn-secondary" onClick={() => copyToClipboard(imagePrompts.map(p => `Card ${p.card} (${p.style_identity}): ${p.prompt}`).join('\n'))}>
-                  <Copy size={14} style={{ marginRight: '5px', display: 'inline' }} /> 복사
-                </button>
-              </div>
-              <div className="content-box">
-                {imagePrompts.map((p) => (
-                  <div key={p.card} style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p style={{ color: 'var(--accent-color)', fontWeight: 600 }}>Card {p.card} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>[{p.style_identity}]</span></p>
-                    <p style={{ fontSize: '0.85rem', color: '#ccc', fontStyle: 'italic' }}>{p.prompt}</p>
+                  <div key={card.card} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <CardPreview 
+                      cardData={card} 
+                      design={cardDesigns.find(d => d.card === card.card)} 
+                    />
+                    <div className="content-box" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <p style={{ color: 'var(--accent-color)', fontWeight: 700, marginBottom: '0.5rem' }}>Card {card.card} 상세 텍스트</p>
+                      {card.title && <p style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{card.title}</p>}
+                      {card.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{card.subtitle}</p>}
+                      {card.body && <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{card.body}</p>}
+                      {card.question && <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--accent-color)' }}>Q: {card.question}</p>}
+                      {card.preview && <p style={{ fontSize: '0.9rem', fontStyle: 'italic', marginTop: '0.5rem' }}>Next: {card.preview}</p>}
+                    </div>
                   </div>
                 ))}
               </div>

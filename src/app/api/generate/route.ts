@@ -100,32 +100,35 @@ ${trends}
 ]`,
 
   card_image: (cards: Array<Record<string, unknown>>) => {
-    return `너는 인스타그램 카드뉴스 비주얼 드렉터야. 
-주제와 카드별 내용 ${JSON.stringify(cards)}을 분석하여, 전체 카드 5장에 흐르는 **하나의 일관된 시각적 브랜드 아이덴티티(Visual Identity)**를 먼저 설정하고, 그에 맞춰 각 카드의 이미지 생성 프롬프트를 영어로 작성해줘.
+    return `너는 인스타그램 카드뉴스의 '비주얼 디자인 디렉터'야. 
+주제와 내용 ${JSON.stringify(cards)}을 분석하여, 카드뉴스를 직접 렌더링하기 위한 **CSS 디자인 토큰(Design Tokens)**을 생성해줘.
+이제 외부 이미지 생성기(Midjourney 등)를 쓰지 않고, 우리 시스템 내에서 아름다운 그라데이션과 글래스모피즘 기반의 UI를 직접 렌더링할 거야.
 
-우리의 목표는 'ai.trend.kr'과 같은 프리미엄하고 세련된 감각의 인스타그램 피드를 만드는 것이야.
+[비주얼 디자인 원칙]:
+1. 5장의 카드가 동일한 테마(Theme)를 공유하되, 각 카드마다 조금씩 색상 톤이 변하는 흐름(Flow)을 주면 좋아.
+2. 배경은 진하고 고급스러운 다크 모드(Deep Dark)를 권장해. (예: 초저녁 우주, 딥 포레스트, 다크 사이버펑크 등)
+3. 텍스트 가독성이 최우선이므로, 'gradientFrom', 'gradientTo'는 어두운 색상(hex code)을 사용해.
+4. 'glowColor'와 'accentColor'는 주제를 강조할 수 있는 몽환적이고 밝은 색상(rgba/hex)을 써줘.
 
-[시각적 스타일 옵션 중 하나를 선택하여 전체 적용]:
-1. **Premium 3D (Claymorphism)**: 부드러운 질감, 파스텔 톤, 피사체와 배경의 명확한 구분, 귀여우면서도 세련된 3D 렌더링 스타일 (Apple/Pixar 느낌).
-2. **Minimalist Glassmorphism**: 투명한 유리 질감, 프로스트 효과, 부드러운 그라데이션 배경, 정갈하고 미래지향적인 UI/UX 스타일.
-3. **Moody Cinematic Photography**: 깊은 대비, 시네마틱한 조명, 감성적인 색감, 피사계 심도(Bokeh)가 강조된 고퀄리티 사진 스타일.
-4. **Modern High-contrast Vector**: 굵은 라인, 강렬한 색상 대비, 기하학적 요소가 가미된 세련된 일러스트레이션 스타일.
-
-[프롬프트 작성 지침]:
-- **일관성**: 5장 모두 동일한 스타일 옵션을 유지할 것 (중간에 스타일을 바꾸지 마).
-- **구도**: 텍스트가 올라갈 위치(중앙 또는 측면)를 고려하여 'Negative Space(여백)'를 확보하도록 묘사해.
-- **디테일**: 조명(Lighting), 질감(Texture), 카메라 앵글(Angle) 정보를 포함할 것.
-- **품질**: 8k, masterpiece, high quality, trending on artstation 등 품질 키워드 포함.
-- **형식**: ImageFX 또는 Midjourney에서 바로 사용 가능한 영어 프롬프트로 2-3줄 이내.
+[필요한 디자인 토큰]:
+- **themeName**: 이 카드 세트의 전체적인 디자인 컨셉 이름 (예: Deep Neon Cyberpunk, Midnight Blue)
+- **gradientFrom**: 배경 그라데이션 시작 색상 (Hex, 어두운 색)
+- **gradientTo**: 배경 그라데이션 끝 색상 (Hex, 어두운 색)
+- **glowColor**: 배경에 은은하게 퍼지는 후광 색상 (rgba 형식 권장, 예: rgba(99, 102, 241, 0.15))
+- **accentColor**: 강조 포인트(로고, 밑줄, 강조 텍스트)에 쓰일 색상 (Hex 또는 rgba)
 
 반드시 JSON으로만 응답. 다른 텍스트 없이.
 형식:
 [
-  {"card":1,"prompt":"Detailed English prompt with style, lighting, and composition...","style_identity":"Selected Style Name"},
-  {"card":2,"prompt":"...","style_identity":"Selected Style Name"},
-  {"card":3,"prompt":"...","style_identity":"Selected Style Name"},
-  {"card":4,"prompt":"...","style_identity":"Selected Style Name"},
-  {"card":5,"prompt":"...","style_identity":"Selected Style Name"}
+  {
+    "card": 1,
+    "themeName": "...",
+    "gradientFrom": "#...",
+    "gradientTo": "#...",
+    "glowColor": "rgba(...)",
+    "accentColor": "#..."
+  },
+  ...
 ]`;
   },
 
