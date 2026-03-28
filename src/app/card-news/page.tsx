@@ -32,7 +32,7 @@ interface CardContent {
 interface ImagePrompt {
   card: number;
   prompt: string;
-  style: string;
+  style_identity: string;
 }
 
 interface CardMarketing {
@@ -535,14 +535,14 @@ export default function CardNewsPage() {
             >
               <div className="result-header">
                 <h2 className="result-title">🖼️ 이미지 생성 프롬프트</h2>
-                <button className="copy-btn btn-secondary" onClick={() => copyToClipboard(imagePrompts.map(p => `Card ${p.card} (${p.style}): ${p.prompt}`).join('\n'))}>
+                <button className="copy-btn btn-secondary" onClick={() => copyToClipboard(imagePrompts.map(p => `Card ${p.card} (${p.style_identity}): ${p.prompt}`).join('\n'))}>
                   <Copy size={14} style={{ marginRight: '5px', display: 'inline' }} /> 복사
                 </button>
               </div>
               <div className="content-box">
                 {imagePrompts.map((p) => (
                   <div key={p.card} style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p style={{ color: 'var(--accent-color)', fontWeight: 600 }}>Card {p.card} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>[{p.style}]</span></p>
+                    <p style={{ color: 'var(--accent-color)', fontWeight: 600 }}>Card {p.card} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>[{p.style_identity}]</span></p>
                     <p style={{ fontSize: '0.85rem', color: '#ccc', fontStyle: 'italic' }}>{p.prompt}</p>
                   </div>
                 ))}

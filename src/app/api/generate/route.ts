@@ -99,20 +99,35 @@ ${trends}
   {"card":5,"question":"...","preview":"..."}
 ]`,
 
-  card_image: (cards: Array<Record<string, unknown>>) => `너는 인스타그램 카드뉴스 이미지 디렉터야.
-카드뉴스 5장 내용 ${JSON.stringify(cards)}을 보고 각 카드에 어울리는 이미지 프롬프트를 영어로 작성해줘.
-ImageFX 또는 Midjourney에서 바로 사용 가능한 프롬프트.
-저작권 문제 없는 스톡 이미지 스타일.
-각 프롬프트 2줄 이내.
+  card_image: (cards: Array<Record<string, unknown>>) => {
+    return `너는 인스타그램 카드뉴스 비주얼 드렉터야. 
+주제와 카드별 내용 ${JSON.stringify(cards)}을 분석하여, 전체 카드 5장에 흐르는 **하나의 일관된 시각적 브랜드 아이덴티티(Visual Identity)**를 먼저 설정하고, 그에 맞춰 각 카드의 이미지 생성 프롬프트를 영어로 작성해줘.
+
+우리의 목표는 'ai.trend.kr'과 같은 프리미엄하고 세련된 감각의 인스타그램 피드를 만드는 것이야.
+
+[시각적 스타일 옵션 중 하나를 선택하여 전체 적용]:
+1. **Premium 3D (Claymorphism)**: 부드러운 질감, 파스텔 톤, 피사체와 배경의 명확한 구분, 귀여우면서도 세련된 3D 렌더링 스타일 (Apple/Pixar 느낌).
+2. **Minimalist Glassmorphism**: 투명한 유리 질감, 프로스트 효과, 부드러운 그라데이션 배경, 정갈하고 미래지향적인 UI/UX 스타일.
+3. **Moody Cinematic Photography**: 깊은 대비, 시네마틱한 조명, 감성적인 색감, 피사계 심도(Bokeh)가 강조된 고퀄리티 사진 스타일.
+4. **Modern High-contrast Vector**: 굵은 라인, 강렬한 색상 대비, 기하학적 요소가 가미된 세련된 일러스트레이션 스타일.
+
+[프롬프트 작성 지침]:
+- **일관성**: 5장 모두 동일한 스타일 옵션을 유지할 것 (중간에 스타일을 바꾸지 마).
+- **구도**: 텍스트가 올라갈 위치(중앙 또는 측면)를 고려하여 'Negative Space(여백)'를 확보하도록 묘사해.
+- **디테일**: 조명(Lighting), 질감(Texture), 카메라 앵글(Angle) 정보를 포함할 것.
+- **품질**: 8k, masterpiece, high quality, trending on artstation 등 품질 키워드 포함.
+- **형식**: ImageFX 또는 Midjourney에서 바로 사용 가능한 영어 프롬프트로 2-3줄 이내.
+
 반드시 JSON으로만 응답. 다른 텍스트 없이.
 형식:
 [
-  {"card":1,"prompt":"...","style":"photo"},
-  {"card":2,"prompt":"...","style":"illustration"},
-  {"card":3,"prompt":"...","style":"photo"},
-  {"card":4,"prompt":"...","style":"illustration"},
-  {"card":5,"prompt":"...","style":"photo"}
-]`,
+  {"card":1,"prompt":"Detailed English prompt with style, lighting, and composition...","style_identity":"Selected Style Name"},
+  {"card":2,"prompt":"...","style_identity":"Selected Style Name"},
+  {"card":3,"prompt":"...","style_identity":"Selected Style Name"},
+  {"card":4,"prompt":"...","style_identity":"Selected Style Name"},
+  {"card":5,"prompt":"...","style_identity":"Selected Style Name"}
+]`;
+  },
 
   card_marketer: (topic: string, cards: Array<Record<string, unknown>>) => `너는 인스타그램 마케터야.
 주제 "${topic}"과 카드뉴스 내용 ${JSON.stringify(cards)}을 보고 게시물 캡션과 해시태그를 작성해줘.
