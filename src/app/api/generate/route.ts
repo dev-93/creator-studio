@@ -109,16 +109,16 @@ ${trends}
 
 [비주얼 디자인 원칙]:
 1. 5장의 카드가 동일한 테마(Theme)를 공유하되, 각 카드마다 조금씩 색상 톤이 변하는 흐름(Flow)을 주면 좋아.
-2. 배경의 톤앤매너는 내용에 맞춰 판단해. 주제가 가볍고 밝거나, 긍정적인 꿀팁이면 '화사하고 밝은 계열(White/Light Pastel)'로, 주제가 무겁고 진지하거나 경고성 이슈라면 '어둡고 진한 계열(Deep Dark)'로 그라데이션을 설정해줘.
-3. 텍스트 가독성이 최우선이므로, 배경이 밝으면 텍스트가 잘 보일 수 있도록 'gradientFrom', 'gradientTo'를 조절해.
-4. 'glowColor'와 'accentColor'는 주제를 강조할 수 있는 트렌디한 색상(rgba/hex)을 써줘.
+2. 현재 UI의 텍스트 색상이 기본적으로 '하얀색(#FFFFFF)'으로 고정되어 있으므로, 배경은 **무조건 어둡고 진한 계열(Deep Dark, Vibrant Dark)**로 생성해줘. (하얀색, 아주 연한 회색, 밝은 파스텔 톤 절대 금지)
+3. 텍스트 가독성이 최우선이므로, 'gradientFrom', 'gradientTo'는 미드나잇 블루, 딥 퍼플, 다크 그레이, 혹은 진한 네온 톤 등 글씨가 명확히 보일 수 있는 어두운 톤 위주로 설정해.
+4. 'glowColor'와 'accentColor'는 전체 배경 대비 시선을 확 사로잡을 수 있는 형광색, 네온 컬러, 혹은 쨍한 밝은 색상으로 지정해 (예: Cyberpunk Yellow, Neon Pink).
 
 [필요한 디자인 토큰]:
 - **themeName**: 이 카드 세트의 전체적인 디자인 컨셉 이름 (예: Deep Neon Cyberpunk, Midnight Blue)
-- **gradientFrom**: 배경 그라데이션 시작 색상 (Hex, 어두운 색)
-- **gradientTo**: 배경 그라데이션 끝 색상 (Hex, 어두운 색)
+- **gradientFrom**: 배경 그라데이션 시작 색상 (Hex, 무조건 어두운 색)
+- **gradientTo**: 배경 그라데이션 끝 색상 (Hex, 무조건 어두운 색)
 - **glowColor**: 배경에 은은하게 퍼지는 후광 색상 (rgba 형식 권장, 예: rgba(99, 102, 241, 0.15))
-- **accentColor**: 강조 포인트(로고, 밑줄, 강조 텍스트)에 쓰일 색상 (Hex 또는 rgba)
+- **accentColor**: 강조 포인트(로고, 밑줄, 강조 텍스트)에 쓰일 색상 (Hex 또는 밝은 rgba)
 
 반드시 JSON으로만 응답. 다른 텍스트 없이.
 형식:

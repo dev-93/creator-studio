@@ -245,6 +245,30 @@ export default function CardNewsPage() {
     setShowHistory(false);
   };
 
+  const loadFromNotion = async (id: string, topic: string) => {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/notion?pageId=${id}`);
+      const result = await res.json();
+      
+      if (result.success && result.data) {
+        setSelectedTopic(topic);
+        setCards(result.data.scenario || []);
+        setCardDesigns(result.data.klingPrompts || []);
+        setMarketing(result.data.marketing);
+        setCompletedSteps(['card_trends', 'card_writer', 'card_image', 'card_marketer']);
+        setShowHistory(false);
+      } else {
+        alert(result.error || '이전 데이터 형식이라 불러올 수 없습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('노션 데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert('클립보드에 복사되었습니다.');
@@ -472,17 +496,40 @@ export default function CardNewsPage() {
                     <div 
                       key={item.id} 
                       className="list-item" 
-                      onClick={() => window.open(item.url, '_blank')}
                       style={{ padding: '0.8rem', fontSize: '0.9rem', position: 'relative' }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}>
                           {item.status}
                         </span>
                         <Database size={12} color="var(--accent-color)" />
                       </div>
-                      <div style={{ fontWeight: 600, color: 'white', marginBottom: '4px' }}>{item.topic}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{new Date(item.date).toLocaleDateString()}</div>
+                      <div 
+                        style={{ fontWeight: 600, color: 'white', marginBottom: '8px', cursor: 'pointer' }}
+                        onClick={() => loadFromNotion(item.id, item.topic)}
+                        className="hover-text"
+                      >
+                        {item.topic}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                          {new Date(item.date).toLocaleDateString()}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            onClick={() => loadFromNotion(item.id, item.topic)}
+                            style={{ background: 'var(--accent-color)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px' }}
+                          >
+                            불러오기
+                          </button>
+                          <button 
+                            onClick={() => window.open(item.url, '_blank')}
+                            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px' }}
+                          >
+                            링크
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
