@@ -149,7 +149,7 @@ export const POST = async (request: Request) => {
       },
       'channel': {
         select: {
-          name: type === 'card' ? 'insta' : 'youtube',
+          name: type === 'card' ? 'insta' : type === 'style' ? 'style' : 'youtube',
         },
       },
     };
@@ -166,7 +166,7 @@ export const POST = async (request: Request) => {
         object: 'block',
         type: 'heading_2',
         heading_2: {
-          rich_text: [{ type: 'text', text: { content: type === 'card' ? '✍️ 카드뉴스 본문' : '🎬 시나리오' } }],
+          rich_text: [{ type: 'text', text: { content: type === 'card' ? '✍️ 카드뉴스 본문' : type === 'style' ? '✨ 추출된 스타일 프롬프트' : '🎬 시나리오' } }],
         },
       });
       
@@ -247,6 +247,28 @@ export const POST = async (request: Request) => {
         paragraph: {
           rich_text: [{ type: 'text', text: { content: marketingText } }],
         },
+      });
+    }
+
+    // 스타일 변환 이미지 추가 (type === 'style'인 경우)
+    const { imageUrl } = await request.clone().json(); // request.json()은 이미 한 번 호출됨
+    if (imageUrl) {
+      children.push({
+        object: 'block',
+        type: 'heading_2',
+        heading_2: {
+          rich_text: [{ type: 'text', text: { content: '🖼️ 결과 이미지' } }],
+        },
+      });
+      children.push({
+        object: 'block',
+        type: 'image',
+        image: {
+          type: 'external',
+          external: {
+            url: imageUrl
+          }
+        }
       });
     }
 

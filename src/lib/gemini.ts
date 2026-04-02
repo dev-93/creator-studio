@@ -33,3 +33,31 @@ export const generateContent = async (prompt: string, isJson: boolean = false, u
   return response.text();
 };
 
+/**
+ * 이미지 분석을 포함한 콘텐츠 생성 함수 (Vision)
+ * @param prompt 프롬프트 텍스트
+ * @param images base64 이미지 데이터 배열 ({ inlineData: { data: string, mimeType: string } })
+ * @param isJson JSON 응답 모드 여부
+ */
+export const generateVisualContent = async (
+  prompt: string, 
+  images: { inlineData: { data: string, mimeType: string } }[],
+  isJson: boolean = false
+) => {
+  const currentModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // 2.5-flash 모델 사용 (사용자 규칙)
+  const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
+  
+  const result = await currentModel.generateContent({
+    contents: [{ 
+      role: "user", 
+      parts: [
+        { text: prompt },
+        ...images
+      ] 
+    }],
+    generationConfig
+  });
+  
+  const response = await result.response;
+  return response.text();
+};

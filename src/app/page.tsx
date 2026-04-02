@@ -281,6 +281,13 @@ export default function Page() {
           >
             카드뉴스 만들기
           </button>
+          <button 
+            className="keyword-tag" 
+            style={{ padding: '0.4rem 1.2rem' }}
+            onClick={() => window.location.href = '/style-transfer'}
+          >
+            스타일 변환
+          </button>
         </nav>
       </header>
 
