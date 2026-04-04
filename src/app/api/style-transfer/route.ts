@@ -5,7 +5,9 @@ const FAL_KEY = process.env.FAL_KEY;
 
 export async function POST(request: Request) {
   try {
+    console.log('--- Style Transfer Started ---');
     const { referenceImages, productImage, productName } = await request.json();
+    console.log(`Payload received: ${referenceImages.length} refs, 1 prod`);
 
     if (!referenceImages || referenceImages.length === 0) {
       return NextResponse.json({ error: '레퍼런스 이미지가 필요합니다.' }, { status: 400 });
@@ -16,6 +18,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Gemini를 통한 스타일 분석 및 프롬프트 추출
+    console.log('Gemini analysis starting...');
     const styleAnalysisPrompt = `
       당신은 이미지 스타일 분석가입니다. 제공된 여러 레퍼런스 이미지들을 분석하여 공통된 시각적 스타일을 추출하세요.
       다음 요소들을 포함하여 매우 상세한 영어 프롬프트를 작성해주세요:
@@ -29,9 +32,8 @@ export async function POST(request: Request) {
       오직 영어 프롬프트만 반환하세요.
     `;
 
-    // 이미지 데이터를 Gemini 형식에 맞게 변환 (base64 string에서 data 부분만 추출)
+    // 이미지 데이터를 Gemini 형식에 맞게 변환
     const geminiImages = referenceImages.map((img: string) => {
-      // data:image/png;base64,iVBORw0KGgo... 형식 대응
       const [mimeInfo, base64Data] = img.includes(',') ? img.split(',') : ['image/jpeg', img];
       const mimeType = mimeInfo.includes(':') ? mimeInfo.split(':')[1].split(';')[0] : 'image/jpeg';
       return {
@@ -43,10 +45,11 @@ export async function POST(request: Request) {
     });
 
     const stylePrompt = await generateVisualContent(styleAnalysisPrompt, geminiImages);
-
-    console.log('Gemini Extracted Style Prompt:', stylePrompt);
+    console.log('Gemini analysis completed.');
+    console.log('Extracted Style Prompt:', stylePrompt);
 
     // 2. FAL-AI Nano Banana 2 Edit 모델을 사용한 이미지 생성
+    console.log('FAL-AI generation starting (sync mode)...');
     const falResponse = await fetch('https://fal.run/fal-ai/nano-banana-2/edit', {
       method: 'POST',
       headers: {
@@ -54,13 +57,14 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        image_url: productImage,
+        image_urls: [productImage],
         prompt: stylePrompt,
-        num_inference_steps: 30,
+        num_inference_steps: 15, // 25 -> 15로 대폭 조정하여 속도 개선
         guidance_scale: 7.5,
         sync_mode: true
       })
     });
+    console.log('FAL-AI raw response received.');
 
     if (!falResponse.ok) {
       const errorData = await falResponse.json();

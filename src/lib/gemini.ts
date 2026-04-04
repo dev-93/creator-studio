@@ -4,7 +4,7 @@ const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY |
 if (!apiKey) console.warn("WARNING: GEMINI_API_KEY is not defined in environment variables.");
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 기본 모델 (검색 미사용)
+// 기본 모델 (Gemini 2.5 Flash 사용 - 사용자 규칙 준수)
 export const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 /**
@@ -44,7 +44,7 @@ export const generateVisualContent = async (
   images: { inlineData: { data: string, mimeType: string } }[],
   isJson: boolean = false
 ) => {
-  const currentModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // 2.5-flash 모델 사용 (사용자 규칙)
+  const currentModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Gemini 2.5 Flash 사용
   const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
   
   const result = await currentModel.generateContent({
