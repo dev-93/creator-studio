@@ -22,19 +22,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '제품 이미지가 필요합니다.' }, { status: 400 });
     }
 
-    // 1. Gemini를 통한 스타일 분석 및 프롬프트 추출
-    console.log('Gemini analysis starting...');
+    // 1. Gemini를 통한 전문 스타일 분석 (원본 프로젝트 스타일 체계 적용)
+    console.log('Gemini precision analysis starting...');
     const styleAnalysisPrompt = `
-      당신은 이미지 스타일 분석가입니다. 제공된 여러 레퍼런스 이미지들을 분석하여 공통된 시각적 스타일을 추출하세요.
-      다음 요소들을 포함하여 매우 상세한 영어 프롬프트를 작성해주세요:
-      - Lighting (soft, moody, dramatic, etc.)
-      - Color Palette (vibrant, muted, monochromatic, etc.)
-      - Composition (minimalist, overhead, cinematic, etc.)
-      - Mood (premium, cozy, retro, futuristic, etc.)
-      - Texture & Materials (glossy, matte, wooden, etc.)
+      당신은 세계 최고의 광고 이미지 스타일 전문가입니다. 제공된 레퍼런스 이미지들의 DNA를 다음 7가지 핵심 차원에서 분석하여 하나의 강력한 명령(Instruction) 프롬프트를 작성하세요:
+      1. Camera & Lens (e.g., fisheye, 35mm movie camera, macro)
+      2. Camera Angle & Shot Type (e.g., extreme low-angle, top-down overhead, cinematic eye-level)
+      3. Color Palette & Lighting (e.g., golden hour warm light, moody dramatic shadows, vibrant neon)
+      4. Composition & Framing (e.g., minimalist centered, dynamic rule of thirds, clean negative space)
+      5. Mood & Energy (e.g., raw urban energy, premium luxury, cozy Scandinavian)
+      6. Texture & Materials (e.g., wet concrete, smooth velvet, rustic wood)
+      7. Overall Scene Context (e.g., studio editorial, real-world street lifestyle)
       
-      결과는 제품명 "${productName || 'product'}"이 이 스타일 내에 조화롭게 배치된 모습을 묘사하는 하나의 완성된 영어 문장이어야 합니다.
-      오직 영어 프롬프트만 반환하세요.
+      반드시 다음 형식을 엄격히 따르세요:
+      "transform into [분석한 스타일 키워드들의 고밀도 조합], maintaining the product shape and details exactly"
+      
+      결과는 오직 영어로 된 하나의 명령 문장이어야 합니다. 다른 설명은 생략하세요.
     `;
 
     // 이미지 데이터를 Gemini 형식에 맞게 변환
@@ -50,11 +53,10 @@ export async function POST(request: Request) {
     });
 
     const stylePrompt = await generateVisualContent(styleAnalysisPrompt, geminiImages);
-    console.log('Gemini analysis completed.');
-    console.log('Extracted Style Prompt:', stylePrompt);
+    console.log('Gemini Analyzed Instruction:', stylePrompt);
 
-    // 2. FAL-AI Nano Banana 2 Edit 모델을 사용한 이미지 생성
-    console.log('FAL-AI generation starting (sync mode)...');
+    // 2. FAL-AI Nano Banana 2 Edit 모델 호출 (원본 프로젝트의 고품질 규격 반영)
+    console.log('FAL-AI generation starting (1K High Quality)...');
     const falResponse = await fetch('https://fal.run/fal-ai/nano-banana-2/edit', {
       method: 'POST',
       headers: {
@@ -64,7 +66,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         image_urls: [productImage],
         prompt: stylePrompt,
-        num_inference_steps: 15, // 25 -> 15로 대폭 조정하여 속도 개선
+        aspect_ratio: "4:5",
+        resolution: "1K",
+        num_inference_steps: 25, // 품질 보존을 위해 25단계 복구
         guidance_scale: 7.5,
         sync_mode: true
       })
