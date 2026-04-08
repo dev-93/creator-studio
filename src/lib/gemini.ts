@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// API 키 로테이션: 여러 키를 등록하면 429 시 다음 키로 전환
+// API 키 로테이션: 429 시 다음 키로 자동 전환
 const apiKeys = [
-  process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || "",
+  process.env.GEMINI_API_KEY || "",
   process.env.GEMINI_API_KEY_2 || "",
   process.env.GEMINI_API_KEY_3 || "",
 ].filter(k => k.length > 0);
@@ -19,11 +19,10 @@ const rotateKey = () => {
   return true;
 };
 
-const MODEL_PRIMARY = "gemini-2.5-flash";
-const MODEL_FALLBACK = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 
 // 기본 모델 (외부 참조용)
-export const model = getGenAI().getGenerativeModel({ model: MODEL_PRIMARY });
+export const model = getGenAI().getGenerativeModel({ model: MODEL });
 
 const safetySettings = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -45,49 +44,40 @@ const parseRetryDelay = (msg: string): number => {
  * 콘텐츠 생성 함수 (텍스트 전용)
  */
 export const generateContent = async (prompt: string, isJson: boolean = false, useSearch: boolean = false) => {
-  const models = [MODEL_PRIMARY, MODEL_FALLBACK];
   const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
   const triedKeys = new Set<number>();
 
-  for (const modelName of models) {
-    triedKeys.clear();
-    while (triedKeys.size < apiKeys.length) {
-      triedKeys.add(currentKeyIndex);
-      const genAI = getGenAI();
-      const currentModel = useSearch
-        ? genAI.getGenerativeModel({ model: modelName, tools: [{ googleSearchRetrieval: {} }] })
-        : genAI.getGenerativeModel({ model: modelName });
+  while (triedKeys.size < apiKeys.length) {
+    triedKeys.add(currentKeyIndex);
+    const genAI = getGenAI();
+    const currentModel = useSearch
+      ? genAI.getGenerativeModel({ model: MODEL, tools: [{ googleSearchRetrieval: {} }] })
+      : genAI.getGenerativeModel({ model: MODEL });
 
-      try {
-        const result = await currentModel.generateContent({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig
-        });
-        return result.response.text();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (isRetryable(message)) {
-          // 429면 키 로테이션 시도
-          if (message.includes('429') && rotateKey()) {
-            console.warn(`${modelName} 429 → 키 로테이션 후 재시도`);
-            continue;
-          }
-          // 503이면 다음 모델로
-          if (modelName === MODEL_PRIMARY) {
-            console.warn(`${modelName} 사용 불가, ${MODEL_FALLBACK}로 전환`);
-            break;
-          }
-          // fallback 모델도 실패 시 대기 후 재시도
-          const delay = parseRetryDelay(message) || 5;
-          console.warn(`${modelName} 재시도 대기 ${delay}초...`);
-          await new Promise(r => setTimeout(r, delay * 1000));
+    try {
+      const result = await currentModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig
+      });
+      return result.response.text();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (isRetryable(message)) {
+        if (rotateKey()) {
+          console.warn(`generateContent 429/503 → 키 로테이션 후 재시도`);
           continue;
         }
-        throw err;
+        // 모든 키 소진 시 대기 후 한 번 더 시도
+        const delay = parseRetryDelay(message) || 10;
+        console.warn(`모든 키 소진, ${delay}초 대기 후 재시도...`);
+        await new Promise(r => setTimeout(r, delay * 1000));
+        triedKeys.clear(); // 리셋하고 한 바퀴 더
+        continue;
       }
+      throw err;
     }
   }
-  throw new Error('API 요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.');
+  throw new Error('API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
 };
 
 /**
@@ -98,57 +88,49 @@ export const generateVisualContent = async (
   images: { inlineData: { data: string, mimeType: string } }[],
   isJson: boolean = false
 ) => {
-  const models = [MODEL_PRIMARY, MODEL_FALLBACK];
   const generationConfig = isJson ? { responseMimeType: "application/json" } : {};
   const triedKeys = new Set<number>();
 
-  for (const modelName of models) {
-    triedKeys.clear();
-    while (triedKeys.size < apiKeys.length) {
-      triedKeys.add(currentKeyIndex);
-      const genAI = getGenAI();
-      const currentModel = genAI.getGenerativeModel({ model: modelName });
+  while (triedKeys.size < apiKeys.length) {
+    triedKeys.add(currentKeyIndex);
+    const genAI = getGenAI();
+    const currentModel = genAI.getGenerativeModel({ model: MODEL });
 
-      try {
-        const result = await currentModel.generateContent({
-          contents: [{
-            role: "user",
-            parts: [{ text: prompt }, ...images]
-          }],
-          generationConfig,
-          safetySettings
-        });
+    try {
+      const result = await currentModel.generateContent({
+        contents: [{
+          role: "user",
+          parts: [{ text: prompt }, ...images]
+        }],
+        generationConfig,
+        safetySettings
+      });
 
-        const response = result.response;
-        if (response.promptFeedback?.blockReason) {
-          throw new Error(`Gemini 응답이 차단되었습니다 (사유: ${response.promptFeedback.blockReason}). 다른 이미지로 시도해주세요.`);
-        }
+      const response = result.response;
+      if (response.promptFeedback?.blockReason) {
+        throw new Error(`Gemini 응답이 차단되었습니다 (사유: ${response.promptFeedback.blockReason}). 다른 이미지로 시도해주세요.`);
+      }
 
-        const text = response.text();
-        if (!text) {
-          throw new Error('Gemini가 빈 응답을 반환했습니다. 다른 이미지로 시도해주세요.');
-        }
-        return text;
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-
-        if (isRetryable(message)) {
-          if (message.includes('429') && rotateKey()) {
-            console.warn(`${modelName} Vision 429 → 키 로테이션 후 재시도`);
-            continue;
-          }
-          if (modelName === MODEL_PRIMARY) {
-            console.warn(`${modelName} 사용 불가, ${MODEL_FALLBACK}로 전환`);
-            break;
-          }
-          const delay = parseRetryDelay(message) || 5;
-          console.warn(`${modelName} Vision 재시도 대기 ${delay}초...`);
-          await new Promise(r => setTimeout(r, delay * 1000));
+      const text = response.text();
+      if (!text) {
+        throw new Error('Gemini가 빈 응답을 반환했습니다. 다른 이미지로 시도해주세요.');
+      }
+      return text;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (isRetryable(message)) {
+        if (rotateKey()) {
+          console.warn(`generateVisualContent 429/503 → 키 로테이션 후 재시도`);
           continue;
         }
-        throw err;
+        const delay = parseRetryDelay(message) || 10;
+        console.warn(`모든 키 소진, ${delay}초 대기 후 재시도...`);
+        await new Promise(r => setTimeout(r, delay * 1000));
+        triedKeys.clear();
+        continue;
       }
+      throw err;
     }
   }
-  throw new Error('API 요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.');
+  throw new Error('API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
 };
