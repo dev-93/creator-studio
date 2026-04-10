@@ -288,10 +288,16 @@ export default function StyleTransferPage() {
                 </h2>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'start', flexWrap: 'wrap' }}>
                   <div onClick={() => prodInputRef.current?.click()}
-                    style={{ width: '200px', height: '200px', background: 'rgba(255,255,255,0.03)', border: '2px dashed var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'hidden' }}
+                    style={{ width: '200px', height: '200px', background: 'rgba(255,255,255,0.03)', border: '2px dashed var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}
                     className="hover-effect">
                     {productImage ? (
-                      <img src={productImage} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <>
+                        <img src={productImage} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={(e) => { e.stopPropagation(); setProductImage(null); }}
+                          style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px', background: 'rgba(239,68,68,0.8)', borderRadius: '50%', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '14px', lineHeight: 1 }}>✕</span>
+                        </button>
+                      </>
                     ) : (
                       <><Upload size={32} style={{ marginBottom: '12px' }} /><span>제품 사진</span></>
                     )}
@@ -356,24 +362,31 @@ export default function StyleTransferPage() {
 
                   {/* Marketing Content */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', color: '#818cf8', fontWeight: 700 }}>
-                        <Sparkles size={18} /> 인스타 업로드 가이드
-                      </div>
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '16px', marginBottom: '1rem' }}>
-                        <p style={{ fontSize: '0.95rem', lineHeight: 1.8, color: '#e5e7eb', whiteSpace: 'pre-wrap' }}>
-                          {marketingGuide || "가이드 생성 중..."}
-                        </p>
-                      </div>
-                      <button className="btn-secondary" style={{ width: '100%', padding: '1rem', borderRadius: '12px', fontSize: '0.9rem' }}
-                        onClick={() => { navigator.clipboard.writeText(marketingGuide); alert('가이드가 복사되었습니다!'); }}>
-                        가이드 복사
-                      </button>
-                    </div>
+                    {/* Marketing Guide - 접기/펼치기 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <details className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+                        <summary style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, cursor: 'pointer', listStyle: 'none' }}>
+                          <Sparkles size={18} /> 인스타 업로드 가이드
+                          <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>펼치기 ▾</span>
+                        </summary>
+                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.2rem', borderRadius: '12px', marginTop: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+                          <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: '#e5e7eb', whiteSpace: 'pre-wrap' }}>
+                            {marketingGuide || "가이드 생성 중..."}
+                          </p>
+                        </div>
+                        <button className="btn-secondary" style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', fontSize: '0.85rem', marginTop: '0.8rem' }}
+                          onClick={() => { navigator.clipboard.writeText(marketingGuide); alert('가이드가 복사되었습니다!'); }}>
+                          가이드 복사
+                        </button>
+                      </details>
 
-                    <div className="content-box">
-                      <p style={{ color: 'var(--text-secondary)', marginBottom: '0.8rem', fontSize: '0.85rem', fontWeight: 600 }}>생성 프롬프트 (AI Decision)</p>
-                      <p style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>{stylePrompt}</p>
+                      <details className="content-box">
+                        <summary style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          생성 프롬프트 (AI Decision)
+                          <span style={{ marginLeft: 'auto', fontSize: '0.8rem' }}>펼치기 ▾</span>
+                        </summary>
+                        <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: '0.8rem', maxHeight: '200px', overflowY: 'auto' }}>{stylePrompt}</p>
+                      </details>
                     </div>
                   </div>
                 </div>
