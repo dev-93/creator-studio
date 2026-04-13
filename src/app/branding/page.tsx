@@ -33,7 +33,7 @@ const STYLE_PRESETS = [
   { label: '럭셔리 에디토리얼', value: 'luxury editorial, dramatic lighting, dark moody background' },
   { label: '내추럴 아웃도어', value: 'natural outdoor, golden hour, organic feel' },
   { label: '네온 사이버펑크', value: 'neon cyberpunk, vibrant colors, futuristic setting' },
-  { label: 'AI 자동 추천', value: '' },
+  { label: 'AI 자동 추천', value: 'AI_AUTO' },
 ];
 
 export default function StyleTransferPage() {
@@ -92,16 +92,17 @@ export default function StyleTransferPage() {
 
   const saveToHistory = (item: StyleHistoryItem) => {
     try {
-      const updated = [item, ...history].slice(0, 10);
+      // localStorage 용량 절약: 이미지 데이터는 저장하지 않음
+      const slimItem = { ...item, resultImage: item.resultImage?.startsWith('http') ? item.resultImage : '' };
+      const updated = [slimItem, ...history].slice(0, 10);
       setHistory(updated);
       try {
         localStorage.setItem('style_transfer_history', JSON.stringify(updated));
-      } catch (e) {
-        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-          const minimal = updated.slice(0, 5);
-          localStorage.setItem('style_transfer_history', JSON.stringify(minimal));
-          setHistory(minimal);
-        }
+      } catch {
+        // 그래도 초과하면 더 줄이기
+        const minimal = updated.slice(0, 3).map(h => ({ ...h, resultImage: '', marketingGuide: '' }));
+        localStorage.setItem('style_transfer_history', JSON.stringify(minimal));
+        setHistory(minimal);
       }
     } catch (err) {
       console.error('History Error:', err);
@@ -126,7 +127,7 @@ export default function StyleTransferPage() {
         body: JSON.stringify({
           productImage: compressedProduct,
           productName,
-          brandStyle
+          brandStyle: brandStyle === 'AI_AUTO' ? '' : brandStyle
         }),
       });
 
