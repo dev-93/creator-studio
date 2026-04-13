@@ -17,14 +17,18 @@ import Link from 'next/link';
 
 type TransferStep = 'idle' | 'analyzing' | 'completed';
 
+interface GeneratedShot {
+  type: string;
+  prompt: string;
+  image: string | null;
+}
+
 interface StyleHistoryItem {
   id: string;
   productName: string;
-  stylePrompt: string;
-  resultImage: string;
+  concept: string;
+  category?: string;
   timestamp: string;
-  marketingGuide?: string;
-  concept?: string;
 }
 
 const STYLE_PRESETS = [
@@ -41,9 +45,9 @@ export default function StyleTransferPage() {
   const [productName, setProductName] = useState('');
   const [brandStyle, setBrandStyle] = useState('');
   const [status, setStatus] = useState<TransferStep>('idle');
-  const [stylePrompt, setStylePrompt] = useState('');
   const [concept, setConcept] = useState('');
-  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [category, setCategory] = useState('');
+  const [shots, setShots] = useState<GeneratedShot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<StyleHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -92,15 +96,12 @@ export default function StyleTransferPage() {
 
   const saveToHistory = (item: StyleHistoryItem) => {
     try {
-      // localStorage 용량 절약: 이미지 데이터는 저장하지 않음
-      const slimItem = { ...item, resultImage: item.resultImage?.startsWith('http') ? item.resultImage : '' };
-      const updated = [slimItem, ...history].slice(0, 10);
+      const updated = [item, ...history].slice(0, 10);
       setHistory(updated);
       try {
         localStorage.setItem('style_transfer_history', JSON.stringify(updated));
       } catch {
-        // 그래도 초과하면 더 줄이기
-        const minimal = updated.slice(0, 3).map(h => ({ ...h, resultImage: '', marketingGuide: '' }));
+        const minimal = updated.slice(0, 3);
         localStorage.setItem('style_transfer_history', JSON.stringify(minimal));
         setHistory(minimal);
       }
@@ -141,20 +142,18 @@ export default function StyleTransferPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '실패했습니다.');
 
-      setStylePrompt(data.stylePrompt);
       setConcept(data.concept || '');
-      setResultImage(data.generatedImage);
+      setCategory(data.category || '');
+      setShots(data.shots || []);
       setMarketingGuide(data.marketingGuide || '');
       setStatus('completed');
 
       saveToHistory({
         id: Date.now().toString(),
         productName: productName || '브랜드 제품',
-        stylePrompt: data.stylePrompt,
-        resultImage: data.generatedImage,
+        concept: data.concept || '',
+        category: data.category,
         timestamp: new Date().toLocaleString(),
-        marketingGuide: data.marketingGuide,
-        concept: data.concept
       });
     } catch (err) {
       console.error(err);
@@ -164,18 +163,18 @@ export default function StyleTransferPage() {
   };
 
   const saveToNotion = async () => {
-    if (!resultImage || !stylePrompt) return;
+    if (shots.length === 0) return;
     setSaveLoading(true);
     try {
-      const isUrl = resultImage.startsWith('http');
+      const imageUrls = shots.filter(s => s.image?.startsWith('http')).map(s => s.image);
       const res = await fetch('/api/notion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'style',
-          theme: productName || '스타일 변환 결과',
-          scenario: stylePrompt,
-          imageUrl: isUrl ? resultImage : undefined,
+          theme: productName || '브랜딩 결과',
+          scenario: shots.map(s => `[${s.type}] ${s.prompt}`).join('\n\n'),
+          imageUrl: imageUrls[0] || undefined,
           marketing: { caption: marketingGuide },
           status: '생성 완료'
         }),
@@ -196,21 +195,19 @@ export default function StyleTransferPage() {
     }
   };
 
-  const downloadResult = () => {
-    if (!resultImage) return;
+  const downloadResult = (url: string, index: number) => {
     const link = document.createElement('a');
-    link.href = resultImage;
-    link.download = `styled-${productName || 'product'}.png`;
+    link.href = url;
+    link.download = `${productName || 'product'}-shot${index + 1}.png`;
     link.click();
   };
 
   const loadFromHistory = (item: StyleHistoryItem) => {
     setProductName(item.productName);
-    setStylePrompt(item.stylePrompt);
-    setResultImage(item.resultImage);
-    setMarketingGuide(item.marketingGuide || '');
     setConcept(item.concept || '');
-    setStatus('completed');
+    setCategory(item.category || '');
+    setShots([]);
+    setMarketingGuide('');
     setShowHistory(false);
   };
 
@@ -349,47 +346,48 @@ export default function StyleTransferPage() {
                   </div>
                 </div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', textAlign: 'center' }}>브랜딩 완료</h2>
-                {concept && <p style={{ textAlign: 'center', color: 'var(--accent-color)', fontWeight: 600, marginBottom: '2rem' }}>{concept}</p>}
+                {concept && <p style={{ textAlign: 'center', color: 'var(--accent-color)', fontWeight: 600, marginBottom: '0.5rem' }}>{concept}</p>}
+                {category && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>카테고리: {category}</p>}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-                  {/* Generated Image */}
-                  <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {resultImage && <img src={resultImage} alt="Generated" style={{ width: '100%', height: 'auto', display: 'block' }} />}
-                    <button onClick={downloadResult}
-                      style={{ position: 'absolute', bottom: '20px', right: '20px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '10px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Download size={18} /> 고화질 저장
-                    </button>
-                  </div>
-
-                  {/* Marketing Content */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    {/* Marketing Guide - 접기/펼치기 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <details className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
-                        <summary style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, cursor: 'pointer', listStyle: 'none' }}>
-                          <Sparkles size={18} /> 인스타 업로드 가이드
-                          <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>펼치기 ▾</span>
-                        </summary>
-                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.2rem', borderRadius: '12px', marginTop: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-                          <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: '#e5e7eb', whiteSpace: 'pre-wrap' }}>
-                            {marketingGuide || "가이드 생성 중..."}
-                          </p>
+                {/* 3장 세트 그리드 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                  {shots.map((shot, idx) => (
+                    <div key={idx} style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)' }}>
+                      {shot.image && (
+                        <div style={{ position: 'relative' }}>
+                          <img src={shot.image} alt={shot.type} style={{ width: '100%', height: 'auto', display: 'block' }} />
+                          <button onClick={() => downloadResult(shot.image!, idx)}
+                            style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '8px 16px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
+                            <Download size={14} /> 저장
+                          </button>
                         </div>
-                        <button className="btn-secondary" style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', fontSize: '0.85rem', marginTop: '0.8rem' }}
-                          onClick={() => { navigator.clipboard.writeText(marketingGuide); alert('가이드가 복사되었습니다!'); }}>
-                          가이드 복사
-                        </button>
-                      </details>
-
-                      <details className="content-box">
-                        <summary style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          생성 프롬프트 (AI Decision)
-                          <span style={{ marginLeft: 'auto', fontSize: '0.8rem' }}>펼치기 ▾</span>
-                        </summary>
-                        <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: '0.8rem', maxHeight: '200px', overflowY: 'auto' }}>{stylePrompt}</p>
-                      </details>
+                      )}
+                      <div style={{ padding: '1rem' }}>
+                        <p style={{ color: 'var(--accent-color)', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.5rem' }}>{shot.type}</p>
+                        <details>
+                          <summary style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer', listStyle: 'none' }}>프롬프트 보기 ▾</summary>
+                          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: '0.5rem', lineHeight: 1.4 }}>{shot.prompt}</p>
+                        </details>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
+
+                {/* 마케팅 가이드 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                  <details className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+                    <summary style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, cursor: 'pointer', listStyle: 'none' }}>
+                      <Sparkles size={18} /> 인스타 업로드 가이드
+                      <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>펼치기 ▾</span>
+                    </summary>
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.2rem', borderRadius: '12px', marginTop: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
+                      <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: '#e5e7eb', whiteSpace: 'pre-wrap' }}>{marketingGuide || "가이드 생성 중..."}</p>
+                    </div>
+                    <button className="btn-secondary" style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', fontSize: '0.85rem', marginTop: '0.8rem' }}
+                      onClick={() => { navigator.clipboard.writeText(marketingGuide); alert('가이드가 복사되었습니다!'); }}>
+                      가이드 복사
+                    </button>
+                  </details>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
