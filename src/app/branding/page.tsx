@@ -23,6 +23,17 @@ interface GeneratedShot {
   image: string | null;
 }
 
+interface MarketingChannel {
+  caption: string;
+  hashtags: string;
+}
+
+interface MarketingChannels {
+  instagram: MarketingChannel;
+  tiktok: MarketingChannel;
+  pinterest: MarketingChannel;
+}
+
 interface StyleHistoryItem {
   id: string;
   productName: string;
@@ -33,17 +44,28 @@ interface StyleHistoryItem {
 
 const STYLE_PRESETS = [
   { label: '미니멀 스튜디오', value: 'minimal studio, clean white background, soft shadows' },
-  { label: '라이프스타일', value: 'lifestyle shot, model holding product naturally, warm indoor setting' },
   { label: '럭셔리 에디토리얼', value: 'luxury editorial, dramatic lighting, dark moody background' },
-  { label: '내추럴 아웃도어', value: 'natural outdoor, golden hour, organic feel' },
+  { label: 'Quiet Luxury', value: 'quiet luxury, old money aesthetic, understated elegance, high-end material texture' },
+  { label: 'MZ Street', value: 'MZ street style, trendy urban fashion, high contrast, vibrant city lights' },
+  { label: 'Eco-Friendly', value: 'eco-friendly branding, sustainable materials, natural wood and plants, soft daylight' },
+  { label: '라이프스타일', value: 'lifestyle shot, model holding product naturally, warm indoor setting' },
   { label: '네온 사이버펑크', value: 'neon cyberpunk, vibrant colors, futuristic setting' },
   { label: 'AI 자동 추천', value: 'AI_AUTO' },
+];
+
+const VOICE_PRESETS = [
+  { label: '고급스럽고 우아한', value: 'Luxury & Premium' },
+  { label: 'MZ 트렌디 & 힙', value: 'MZ Trendy & Hip' },
+  { label: '친환경 & 자연주의', value: 'Eco-Friendly & Natural' },
+  { label: '미니멀 & 깔끔한', value: 'Minimal & Clean' },
+  { label: '친근하고 따뜻한', value: 'Friendly & Kind' },
 ];
 
 export default function StyleTransferPage() {
   const [productImage, setProductImage] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
   const [brandStyle, setBrandStyle] = useState('');
+  const [brandVoice, setBrandVoice] = useState('Luxury & Premium');
   const [status, setStatus] = useState<TransferStep>('idle');
   const [concept, setConcept] = useState('');
   const [category, setCategory] = useState('');
@@ -53,7 +75,8 @@ export default function StyleTransferPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [marketingGuide, setMarketingGuide] = useState('');
+  const [marketingChannels, setMarketingChannels] = useState<MarketingChannels | null>(null);
+  const [activeTab, setActiveTab] = useState<'instagram' | 'tiktok' | 'pinterest'>('instagram');
 
   const prodInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,7 +151,8 @@ export default function StyleTransferPage() {
         body: JSON.stringify({
           productImage: compressedProduct,
           productName,
-          brandStyle: brandStyle === 'AI_AUTO' ? '' : brandStyle
+          brandStyle: brandStyle === 'AI_AUTO' ? '' : brandStyle,
+          brandVoice
         }),
       });
 
@@ -145,7 +169,7 @@ export default function StyleTransferPage() {
       setConcept(data.concept || '');
       setCategory(data.category || '');
       setShots(data.shots || []);
-      setMarketingGuide(data.marketingGuide || '');
+      setMarketingChannels(data.marketingChannels || null);
       setStatus('completed');
 
       saveToHistory({
@@ -175,7 +199,7 @@ export default function StyleTransferPage() {
           theme: productName || '브랜딩 결과',
           scenario: shots.map(s => `[${s.type}] ${s.prompt}`).join('\n\n'),
           imageUrl: imageUrls[0] || undefined,
-          marketing: { caption: marketingGuide },
+          marketing: marketingChannels,
           status: '생성 완료'
         }),
       });
@@ -207,7 +231,8 @@ export default function StyleTransferPage() {
     setConcept(item.concept || '');
     setCategory(item.category || '');
     setShots([]);
-    setMarketingGuide('');
+    setMarketingChannels(null);
+    setActiveTab('instagram');
     setShowHistory(false);
   };
 
@@ -315,18 +340,34 @@ export default function StyleTransferPage() {
               {/* Style Preset */}
               <section className="glass-panel">
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Sparkles size={20} color="var(--accent-color)" /> 브랜딩 스타일
+                  <Sparkles size={20} color="var(--accent-color)" /> 브랜딩 스타일 & 보이스
                 </h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem' }}>
-                  {STYLE_PRESETS.map((preset) => (
-                    <button key={preset.label} className={`keyword-tag ${brandStyle === preset.value ? 'selected-item' : ''}`}
-                      onClick={() => setBrandStyle(preset.value)} style={{ padding: '0.5rem 1.2rem' }}>
-                      {preset.label}
-                    </button>
-                  ))}
+                
+                <div style={{ marginBottom: '2rem' }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>시각적 스타일 (배경 및 조명)</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1rem' }}>
+                    {STYLE_PRESETS.map((preset) => (
+                      <button key={preset.label} className={`keyword-tag ${brandStyle === preset.value ? 'selected-item' : ''}`}
+                        onClick={() => setBrandStyle(preset.value)} style={{ padding: '0.5rem 1.2rem' }}>
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="input-group">
+                    <input type="text" placeholder="또는 직접 스타일 입력 (예: 따뜻한 카페 분위기...)" value={brandStyle} onChange={(e) => setBrandStyle(e.target.value)} />
+                  </div>
                 </div>
-                <div className="input-group">
-                  <input type="text" placeholder="또는 직접 스타일 입력 (예: 따뜻한 카페 분위기, 여성 모델이 들고 있는...)" value={brandStyle} onChange={(e) => setBrandStyle(e.target.value)} />
+
+                <div>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>브랜드 보이스 (마케팅 문구 톤)</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {VOICE_PRESETS.map((preset) => (
+                      <button key={preset.label} className={`keyword-tag ${brandVoice === preset.value ? 'selected-item' : ''}`}
+                        onClick={() => setBrandVoice(preset.value)} style={{ padding: '0.5rem 1.2rem', borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </section>
 
@@ -375,19 +416,59 @@ export default function StyleTransferPage() {
 
                 {/* 마케팅 가이드 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                  <details className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
-                    <summary style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, cursor: 'pointer', listStyle: 'none' }}>
-                      <Sparkles size={18} /> 인스타 업로드 가이드
-                      <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>펼치기 ▾</span>
-                    </summary>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.2rem', borderRadius: '12px', marginTop: '1rem', maxHeight: '300px', overflowY: 'auto' }}>
-                      <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: '#e5e7eb', whiteSpace: 'pre-wrap' }}>{marketingGuide || "가이드 생성 중..."}</p>
+                  <div className="content-box" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)', padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#818cf8', fontWeight: 700, marginBottom: '1.5rem' }}>
+                      <Sparkles size={20} /> 멀티 채널 마케팅 캡션
                     </div>
-                    <button className="btn-secondary" style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', fontSize: '0.85rem', marginTop: '0.8rem' }}
-                      onClick={() => { navigator.clipboard.writeText(marketingGuide); alert('가이드가 복사되었습니다!'); }}>
-                      가이드 복사
+
+                    {/* 채널 탭 */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
+                      {(['instagram', 'tiktok', 'pinterest'] as const).map((tab) => (
+                        <button key={tab} 
+                          onClick={() => setActiveTab(tab)}
+                          style={{ 
+                            padding: '0.6rem 1.2rem', 
+                            borderRadius: '10px', 
+                            border: '1px solid',
+                            borderColor: activeTab === tab ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)',
+                            background: activeTab === tab ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                            color: activeTab === tab ? 'var(--accent-color)' : 'var(--text-secondary)',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            textTransform: 'capitalize'
+                          }}>
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.2rem', borderRadius: '12px', minHeight: '150px' }}>
+                      {marketingChannels ? (
+                        <>
+                          <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: '#e5e7eb', whiteSpace: 'pre-wrap', marginBottom: '1rem' }}>
+                            {marketingChannels[activeTab].caption}
+                          </p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--accent-color)', opacity: 0.8 }}>
+                            {marketingChannels[activeTab].hashtags}
+                          </p>
+                        </>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>문구 생성 중...</p>
+                      )}
+                    </div>
+                    
+                    <button className="btn-secondary" style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', fontSize: '0.85rem', marginTop: '1rem' }}
+                      onClick={() => { 
+                        if (marketingChannels) {
+                          const text = `${marketingChannels[activeTab].caption}\n\n${marketingChannels[activeTab].hashtags}`;
+                          navigator.clipboard.writeText(text); 
+                          alert(`${activeTab.toUpperCase()} 문구가 복사되었습니다!`); 
+                        }
+                      }}>
+                      {activeTab.toUpperCase()} 문구 복사하기
                     </button>
-                  </details>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>

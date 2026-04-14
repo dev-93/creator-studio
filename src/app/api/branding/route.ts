@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
   try {
     console.log('--- AI Product Branding Started ---');
-    const { productImage, productName, brandStyle } = await request.json();
+    const { productImage, productName, brandStyle, brandVoice } = await request.json();
 
     if (!productImage) {
       return NextResponse.json({ error: '제품 이미지가 필요합니다.' }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const adDirectorPrompt = `당신은 세계적인 광고 에이전시의 크리에이티브 디렉터이자 상업 사진 감독입니다.
 제품명: "${productName || '제품'}"
 ${brandStyle ? `클라이언트 요청 스타일: "${brandStyle}"` : ''}
+브랜드 보이스: "${brandVoice || '자연스럽고 세련된'}"
 
 [카테고리별 촬영 전문 지식]
 제품명을 분석하여 가장 적합한 카테고리를 자동 판단하고, 해당 지식을 반영하세요.
@@ -58,34 +59,33 @@ ${brandStyle ? `클라이언트 요청 스타일: "${brandStyle}"` : ''}
 
 [작업 지시]
 1단계: 제품 카테고리를 자동 판단하세요.
-2단계: 이 제품을 위한 3장 세트 캠페인 촬영 프롬프트를 작성하세요.
+2단계: 이 제품을 위한 3장 세트 캠페인 촬영 프롬프트를 작성하세요. (shot1: 착용/사용, shot2: 제품 히어로, shot3: 무드/컨텍스트)
+각 프롬프트는 영어로 작성하며, "professional commercial product photography, editorial quality"를 반드시 포함하세요.
 
-3장은 각각 다른 컨셉이어야 합니다:
-- shot1 (착용/사용): 모델이 제품을 실제로 착용하거나 사용하는 라이프스타일 샷. 자연스러운 일상 속 모습.
-- shot2 (제품 히어로): 제품 자체가 주인공인 스틸라이프. 소재감, 디테일, 형태를 극대화. 모델 없이 제품만.
-- shot3 (무드/컨텍스트): 제품이 속한 세계관을 보여주는 무드샷. 공간, 소품, 색감으로 브랜드의 감성과 세계관을 전달. 제품은 화면의 일부로 자연스럽게 배치.
-
-각 프롬프트에 반드시 포함:
-- "professional commercial product photography, editorial quality, shot on medium format camera"
-- 제품 형태와 디테일을 정확히 유지하라는 지시
-- 구체적인 배경, 조명, 색감, 카메라 앵글 지정
-
-3단계: 인스타그램 마케팅 가이드 (간결하게)
+3단계: 멀티 채널 마케팅 캡션 생성 (한국어)
+브랜드 보이스(${brandVoice || '자연스럽고 세련된'})를 반영하여 아래 채널별 최적화된 문구를 작성하세요:
+- Instagram: 감성적이고 몰입감 있는 스토리텔링, 이모지의 적절한 사용, 브랜드의 철학이나 무드를 담은 문구, 연관 해시태그 10개 이상.
+- TikTok: 1초 만에 시선을 끄는 강력한 후킹 문구, 트렌디하고 친근한 어투, 영상 제작을 위한 간단한 챌린지 아이디어 제안 포함, 핵심 해시태그.
+- Pinterest: 제품의 가치를 보여주는 정보 전달형 제목, 검색 최적화(SEO)를 고려한 상세 설명, 타겟 키워드 중심의 해시태그.
 
 반드시 아래 JSON 형식으로만 답변하세요:
 {
-  "category": "자동 판단된 카테고리",
-  "concept": "캠페인 컨셉 한줄 요약 (한국어)",
+  "category": "판단된 카테고리",
+  "concept": "캠페인 컨셉 요약",
   "shots": [
-    { "type": "착용/사용", "prompt": "영어 프롬프트" },
-    { "type": "제품 히어로", "prompt": "영어 프롬프트" },
-    { "type": "무드/컨텍스트", "prompt": "영어 프롬프트" }
+    { "type": "착용/사용", "prompt": "..." },
+    { "type": "제품 히어로", "prompt": "..." },
+    { "type": "무드/컨텍스트", "prompt": "..." }
   ],
-  "marketingGuide": "인스타 업로드 가이드 (한국어, 간결하게)"
+  "marketingChannels": {
+    "instagram": { "caption": "...", "hashtags": "#..." },
+    "tiktok": { "caption": "...", "hashtags": "#..." },
+    "pinterest": { "caption": "...", "hashtags": "#..." }
+  }
 }`;
 
     const agentResponse = await generateContent(adDirectorPrompt, true);
-    const { category, concept, shots, marketingGuide } = JSON.parse(agentResponse);
+    const { category, concept, shots, marketingChannels } = JSON.parse(agentResponse);
 
     console.log('Category:', category);
     console.log('Concept:', concept);
@@ -136,7 +136,7 @@ ${brandStyle ? `클라이언트 요청 스타일: "${brandStyle}"` : ''}
       category,
       concept,
       shots: generatedShots,
-      marketingGuide,
+      marketingChannels,
     });
 
   } catch (error) {
