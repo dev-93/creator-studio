@@ -189,8 +189,10 @@ export const POST = async (request: Request) => {
     }
 
     // card_writer 단계에서만 정확한 정보 작성을 위해 검색(useSearch) 기능을 활성화합니다.
+    // google_search 도구와 responseMimeType: "application/json"은 동시 사용 불가하므로
+    // useSearch 시 isJson=false로 설정하여 텍스트 응답에서 JSON을 파싱합니다.
     const useSearch = step === 'card_writer';
-    const text = await generateContent(prompt, true, useSearch);
+    const text = await generateContent(prompt, !useSearch, useSearch);
     
     let data;
     try {

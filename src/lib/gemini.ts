@@ -51,7 +51,7 @@ export const generateContent = async (prompt: string, isJson: boolean = false, u
     triedKeys.add(currentKeyIndex);
     const genAI = getGenAI();
     const currentModel = useSearch
-      ? genAI.getGenerativeModel({ model: MODEL, tools: [{ googleSearchRetrieval: {} }] })
+      ? genAI.getGenerativeModel({ model: MODEL, tools: [{ googleSearch: {} } as any] })
       : genAI.getGenerativeModel({ model: MODEL });
 
     try {
