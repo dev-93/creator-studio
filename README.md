@@ -1,4 +1,4 @@
-# youtube-pipeline
+# creator-studio
 
 이 프로젝트는 YouTube 관련 데이터를 처리하고, Gemini AI를 활용하여 콘텐츠를 생성하며, Notion과 연동하는 파이프라인 애플리케이션입니다. Next.js를 기반으로 구축되었으며, 사용자 친화적인 인터페이스와 강력한 백엔드 기능을 제공합니다.
 
